@@ -9,7 +9,7 @@ import { CompanyModule } from './company/company.module';
 import { JobModule } from './job/job.module';
 import { ApplicationModule } from './application/application.module';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -33,6 +33,6 @@ import { JwtModule } from '@nestjs/jwt';
     ApplicationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, UserService],
+  providers: [AppService, PrismaService, UserService, JwtService],
 })
 export class AppModule {}
