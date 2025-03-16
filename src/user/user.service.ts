@@ -52,5 +52,37 @@ export class UserService {
     return { user, success: true, message: 'User successfully created' };
   }
 
-  async login() {}
+  async login(email: string, password: string, role: string) {
+    if (!email || !password) {
+      throw new BadRequestException('Email and password are required');
+    }
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      throw new BadRequestException('InCorrect password');
+    }
+    if (role && user.role !== role) {
+      throw new BadRequestException('User role does not match');
+    }
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    const token = this.jwtService.sign(payload, {
+      secret: process.env.JWT_SECRET,
+    });
+    return { user, token };
+  }
+
+  async logout() {
+    return { message: 'User logged out', success: true };
+  }
 }
