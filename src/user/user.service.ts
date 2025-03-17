@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { RegisterUserDto } from './dto/userDto.dto';
+import { RegisterUserDto, UpdateUserDto } from './dto/userDto.dto';
 import { PrismaService } from 'src/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -84,5 +84,42 @@ export class UserService {
 
   async logout() {
     return { message: 'User logged out', success: true };
+  }
+
+  async updateProfile(userId: string, updateUserDto: UpdateUserDto) {
+    const {
+      email,
+      fullname,
+      password,
+      phoneNumber,
+      profileBio,
+      profilePhoto,
+      profileResume,
+      profileResumeOriginalName,
+      profileSkills,
+    } = updateUserDto;
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    const user = await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        email,
+        fullname,
+        password,
+        phoneNumber,
+        profileBio,
+        profilePhoto,
+        profileResume,
+        profileResumeOriginalName,
+        profileSkills,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('User not updated');
+    }
+    return { user };
   }
 }

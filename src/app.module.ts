@@ -9,7 +9,8 @@ import { CompanyModule } from './company/company.module';
 import { JobModule } from './job/job.module';
 import { ApplicationModule } from './application/application.module';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './auth/jwt.strategy';
 
 @Module({
   imports: [
@@ -33,6 +34,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
     ApplicationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, UserService, JwtService],
+  providers: [AppService, PrismaService, UserService, JwtStrategy],
 })
 export class AppModule {}

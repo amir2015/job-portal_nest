@@ -1,7 +1,17 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { UserService } from './user.service';
-import { RegisterUserDto } from './dto/userDto.dto';
+import { RegisterUserDto, UpdateUserDto } from './dto/userDto.dto';
 import { Response } from 'express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -38,6 +48,27 @@ export class UserController {
         sameSite: 'strict',
       });
       return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json({ message: error.message, success: false });
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('updateProfile')
+  async updateProfile(
+    @Req() req: any,
+    @Body() updateUserDto: UpdateUserDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const userId = req.user.id;
+      const user = await this.userService.updateProfile(userId, updateUserDto);
+
+      return res.status(200).json({
+        user,
+        success: true,
+        message: 'User successfully updated',
+      });
     } catch (error) {
       return res.status(400).json({ message: error.message, success: false });
     }
