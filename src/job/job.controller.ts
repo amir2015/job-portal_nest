@@ -73,4 +73,12 @@ export class JobController {
       success: true,
     };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/jobs')
+  async getJobByUserId(@Req() req: any) {
+    const userId = req.user.id;
+    const jobs = await this.jobService.getJobByUserId(userId);
+    return { jobs, success: true };
+  }
 }

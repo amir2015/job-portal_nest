@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PostJobDto } from './jobDto.dto';
 import { PrismaService } from 'src/prisma.service';
 
@@ -118,7 +122,7 @@ export class JobService {
       throw new BadRequestException(error.message);
     }
   }
-  
+
   async getFavorites(userId: string) {
     try {
       const favoritedJobs = await this.prismaService.favorite.findMany({
@@ -131,6 +135,23 @@ export class JobService {
       return favoritedJobs;
     } catch (error) {
       throw new BadRequestException('No favorite jobs found');
+    }
+  }
+
+  async getJobByUserId(createdById: string) {
+    try {
+      const jobs = await this.prismaService.job.findMany({
+        where: { createdById },
+        include: { company: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!jobs || jobs?.length === 0) {
+        throw new NotFoundException('Jobs not found');
+      }
+      return jobs;
+    } catch (error) {
+      throw new NotFoundException('Jobs not found');
     }
   }
 }
