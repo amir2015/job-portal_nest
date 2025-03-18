@@ -40,4 +40,25 @@ export class JobController {
       success: true,
     };
   }
+
+  @Get(':id')
+  async getJobById(@Param('id') jobId: string) {
+    const job = await this.jobService.getJobById(jobId);
+    return {
+      job,
+      success: true,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('favorite/:id')
+  async favoriteJob(@Param('id') jobId: string, @Req() req: any) {
+    const userId = req.user.id;
+    const result = await this.jobService.favoriteJob(jobId, userId);
+    return {
+      message: 'job added in favorites successfully',
+      result,
+      success: true,
+    };
+  }
 }

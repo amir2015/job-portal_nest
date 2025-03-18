@@ -79,4 +79,43 @@ export class JobService {
     }
     return jobs;
   }
+
+  async getJobById(jobId: string) {
+    const job = await this.prismaService.job.findUnique({
+      where: { id: jobId },
+      include: { company: true },
+    });
+    if (!job) {
+      throw new BadRequestException('Job not found');
+    }
+    return job;
+  }
+
+  async favoriteJob(jobId: string, userId: string) {
+    let recentFav: any;
+    try {
+      const fav = await this.prismaService.favorite.findFirst({
+        where: { jobId, userId },
+      });
+
+      if (fav) {
+        throw new BadRequestException('This job is already in favorite');
+      }
+
+      recentFav = await this.prismaService.favorite.create({
+        data: {
+          jobId,
+          userId,
+        },
+      });
+
+      if (!recentFav) {
+        throw new BadRequestException('Job not added in favorite');
+      }
+      return recentFav;
+    } catch (error) {
+      console.log(error.message);
+      throw new BadRequestException(error.message);
+    }
+  }
 }
