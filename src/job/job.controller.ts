@@ -1,34 +1,84 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { JobService } from './job.service';
-import { CreateJobDto } from './dto/create-job.dto';
-import { UpdateJobDto } from './dto/update-job.dto';
+
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { PostJobDto } from './jobDto.dto';
 
 @Controller('job')
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createJobDto: CreateJobDto) {
-    return this.jobService.create(createJobDto);
+  async postJob(@Body() postJobDto: PostJobDto, @Req() req: any) {
+    const userId = req.user.id;
+    const job = await this.jobService.postJob(postJobDto, userId);
+    return {
+      message: 'job posted successfully',
+      result: job,
+      success: true,
+    };
   }
 
   @Get()
-  findAll() {
-    return this.jobService.findAll();
+  async getAllJobs(@Query() query: string) {
+    const jobs = await this.jobService.getAllJobs(query);
+    return {
+      message: 'jobs fetched successfully',
+      result: jobs,
+      success: true,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.jobService.findOne(+id);
+  async getJobById(@Param('id') jobId: string) {
+    const job = await this.jobService.getJobById(jobId);
+    return {
+      job,
+      success: true,
+    };
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateJobDto: UpdateJobDto) {
-    return this.jobService.update(+id, updateJobDto);
+  @UseGuards(JwtAuthGuard)
+  @Post('favorite/:id')
+  async favoriteJob(@Param('id') jobId: string, @Req() req: any) {
+    const userId = req.user.id;
+    const result = await this.jobService.favoriteJob(jobId, userId);
+    return {
+      message: 'job added in favorites successfully',
+      result,
+      success: true,
+    };
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.jobService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  @Get('favorites')
+  async getFavorites(@Req() req: any) {
+    const userId = req.user.id;
+    const result = await this.jobService.getFavorites(userId);
+    return {
+      message: 'favorites fetched successfully',
+      result,
+      success: true,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/jobs')
+  async getJobByUserId(@Req() req: any) {
+    const userId = req.user.id;
+    const jobs = await this.jobService.getJobByUserId(userId);
+    return { jobs, success: true };
   }
 }

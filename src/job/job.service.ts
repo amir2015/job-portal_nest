@@ -1,26 +1,157 @@
-import { Injectable } from '@nestjs/common';
-import { CreateJobDto } from './dto/create-job.dto';
-import { UpdateJobDto } from './dto/update-job.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PostJobDto } from './jobDto.dto';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class JobService {
-  create(createJobDto: CreateJobDto) {
-    return 'This action adds a new job';
+  constructor(private prismaService: PrismaService) {}
+  async postJob(postJobDto: PostJobDto, createdById: string) {
+    const {
+      title,
+      description,
+      requirements,
+      salary,
+      location,
+      jobType,
+      experienceLevel,
+      position,
+      companyId,
+    } = postJobDto;
+    const job = await this.prismaService.job.create({
+      data: {
+        title,
+        description,
+        requirements,
+        salary,
+        location,
+        jobType,
+        experienceLevel,
+        position,
+        companyId,
+        createdById,
+      },
+      include: { company: true },
+    });
+    if (!job) {
+      throw new BadRequestException('Job Not created');
+    }
+    return job;
   }
 
-  findAll() {
-    return `This action returns all job`;
+  async getAllJobs(query: any) {
+    const { location, salary, jobType, keyword } = query;
+    const salaryRange = salary?.split('-');
+    let jobs = [];
+    if (location || salary || jobType || keyword) {
+      jobs = await this.prismaService.job.findMany({
+        where: {
+          ...(keyword && {
+            OR: [
+              { title: { contains: keyword, mode: 'insensitive' } },
+              { description: { contains: keyword, mode: 'insensitive' } },
+            ],
+          }),
+          ...(location && {
+            location: { contains: location, mode: 'insensitive' },
+          }),
+          ...(jobType && {
+            jobType: { contains: jobType, mode: 'insensitive' },
+          }),
+          ...(salary &&
+            salaryRange?.length && {
+              salary: {
+                gte: parseInt(salaryRange[0], 10),
+                lte: parseInt(salaryRange[1], 10),
+              },
+            }),
+        },
+        include: { company: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      jobs = await this.prismaService.job.findMany({
+        skip: 0,
+        take: 5,
+      });
+    }
+    if (!jobs || jobs.length === 0) {
+      throw new BadRequestException('No jobs found');
+    }
+    return jobs;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} job`;
+  async getJobById(jobId: string) {
+    const job = await this.prismaService.job.findUnique({
+      where: { id: jobId },
+      include: { company: true },
+    });
+    if (!job) {
+      throw new BadRequestException('Job not found');
+    }
+    return job;
   }
 
-  update(id: number, updateJobDto: UpdateJobDto) {
-    return `This action updates a #${id} job`;
+  async favoriteJob(jobId: string, userId: string) {
+    let recentFav: any;
+    try {
+      const fav = await this.prismaService.favorite.findFirst({
+        where: { jobId, userId },
+      });
+
+      if (fav) {
+        throw new BadRequestException('This job is already in favorite');
+      }
+
+      recentFav = await this.prismaService.favorite.create({
+        data: {
+          jobId,
+          userId,
+        },
+      });
+
+      if (!recentFav) {
+        throw new BadRequestException('Job not added in favorite');
+      }
+      return recentFav;
+    } catch (error) {
+      console.log(error.message);
+      throw new BadRequestException(error.message);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} job`;
+  async getFavorites(userId: string) {
+    try {
+      const favoritedJobs = await this.prismaService.favorite.findMany({
+        where: { userId },
+        include: { job: { include: { company: true } } },
+      });
+      if (!favoritedJobs || favoritedJobs.length === 0) {
+        throw new BadRequestException('No favorite jobs found');
+      }
+      return favoritedJobs;
+    } catch (error) {
+      throw new BadRequestException('No favorite jobs found');
+    }
+  }
+
+  async getJobByUserId(createdById: string) {
+    try {
+      const jobs = await this.prismaService.job.findMany({
+        where: { createdById },
+        include: { company: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!jobs || jobs?.length === 0) {
+        throw new NotFoundException('Jobs not found');
+      }
+      return jobs;
+    } catch (error) {
+      throw new NotFoundException('Jobs not found');
+    }
   }
 }
