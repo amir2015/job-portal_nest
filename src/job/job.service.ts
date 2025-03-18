@@ -118,4 +118,19 @@ export class JobService {
       throw new BadRequestException(error.message);
     }
   }
+  
+  async getFavorites(userId: string) {
+    try {
+      const favoritedJobs = await this.prismaService.favorite.findMany({
+        where: { userId },
+        include: { job: { include: { company: true } } },
+      });
+      if (!favoritedJobs || favoritedJobs.length === 0) {
+        throw new BadRequestException('No favorite jobs found');
+      }
+      return favoritedJobs;
+    } catch (error) {
+      throw new BadRequestException('No favorite jobs found');
+    }
+  }
 }
